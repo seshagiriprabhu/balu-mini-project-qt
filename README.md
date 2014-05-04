@@ -15,5 +15,5 @@ $ sudo apt-get install python-qt4
 TODO
 - [x] Small iframe detection
 - [x] Re-written to qt
-- [ ] Detection of iframe with negative dimensions
-- [ ] Redirection detection in the given URL
+- [x] Detection of iframe with negative dimensions
+- [x] Redirection detection in the given URL

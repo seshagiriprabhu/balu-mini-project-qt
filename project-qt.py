@@ -1,8 +1,8 @@
 import sys
 import urllib2
-from bs4 import BeautifulSoup
-import os
 import re
+import httplib
+from bs4 import BeautifulSoup
 from PyQt4.QtCore import *
 from PyQt4 import QtGui 
 from PyQt4.QtGui import *
@@ -197,18 +197,62 @@ class AnalyzerWindow(QtGui.QWidget):
         self.setContentsMargins(0, 0, 0, 0)
         
         # On button click activity
-        self.btn.clicked.connect(self.AnalyzeUrl)
+        self.btn.clicked.connect(self.CheckURL)
         self.setLayout(self.verticalLayout)
         self.setWindowIcon(QtGui.QIcon("images/icon64.png"))
         self.setWindowTitle('Amrita Malicious Advertisement Analyzer (AMAA)')
         self.show()
    
-    def AnalyzeUrl(self):
+    def getURLResponse(self, url):
+        """
+        Analyses the response from URL and invokes Analyze function for further 
+        analysis
+        """
+        try:
+            code = 0
+            urlout = ''
+            ouy = []
+            req = urllib2.Request(url.strip())
+            try:
+                res = urllib2.urlopen(req)
+                data = res.read()
+                code = res.getcode()
+                self.AnalyzeUrl(url)
+                if code > 200 and code < 400:
+                    urlout=re.findall('((https?):((//)|(\\\\))+([\w\d:#@%/;$()~_?\+-=\\\.&](#!)?)*)',data)
+                    ouy.append(code)
+                    ouy.append(urlout[1])
+                    return ouy#code,urlout[1] 
+            except:
+                print 'The server couldn\'t fullfill the reques'
+                return None
+        except:
+            print 'URL scan failed'
+            return None
+
+    def CheckURL(self):
+        """
+        Function to check for URL redirection
+        """
+        self.url_input = self.urlInput.text()
+        res = self.getURLResponse(str(self.url_input))
+
+        while True:
+            if res:
+                if res[0] == 400:
+                    print res[0], "Redirected to ", res[1]
+                    res,data = getURLResponse(res[1])
+                else:
+                    print "No redirection"
+                    break
+            else:
+                break
+
+    def AnalyzeUrl(self, url):
         """
         Function to analyze the given input and act accordingly
         """
 
-        self.url_input = self.urlInput.text()
         self.frameCount = 0
         self.scriptCount = 0
         self.staticFrames = 0
@@ -234,7 +278,7 @@ class AnalyzerWindow(QtGui.QWidget):
             req_site = urllib2.Request(url_input, txdata, txheaders)"""
 
             # Sending get request
-            self.get = urllib2.urlopen(str(self.url_input)).read()
+            self.get = urllib2.urlopen(url).read()
             self.dom = BeautifulSoup(self.get)
             # Fetching all the iframes in the page
             self.iframe_data = self.dom.findAll('iframe')
@@ -376,7 +420,7 @@ class AnalyzerWindow(QtGui.QWidget):
             return contentType
         except Exception:
             return "unknown"
-
+    
 class About(QtGui.QDialog):
     def __init__(self):
         QtGui.QDialog.__init__(self)
